@@ -53,7 +53,7 @@ export function BeamResults({ results }: BeamResultsProps) {
                       {prompt.refused ? (
                         <Badge variant="destructive">Refused</Badge>
                       ) : (
-                        <Badge variant="success">Accepted</Badge>
+                        <Badge variant="secondary">Accepted</Badge>
                       )}
                     </TableCell>
                     <TableCell className="max-w-[400px] whitespace-normal">
