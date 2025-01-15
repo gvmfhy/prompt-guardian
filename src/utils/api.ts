@@ -1,3 +1,5 @@
+import { APIResponse } from '@/types/beast';
+
 const API_ENDPOINT = 'YOUR_API_ENDPOINT'; // Replace with actual endpoint
 
 export async function queryLLM(prompt: string): Promise<APIResponse> {
