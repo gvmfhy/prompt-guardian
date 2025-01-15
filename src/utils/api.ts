@@ -1,15 +1,30 @@
 import { APIResponse } from '@/types/beast';
 
-const API_ENDPOINT = 'YOUR_API_ENDPOINT'; // Replace with actual endpoint
+const API_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
 
-export async function queryLLM(prompt: string): Promise<APIResponse> {
+export async function queryLLM(prompt: string, apiKey: string): Promise<APIResponse> {
   try {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful AI assistant. Analyze the following prompt and respond naturally.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 1000
+      }),
     });
 
     if (!response.ok) {
@@ -19,9 +34,9 @@ export async function queryLLM(prompt: string): Promise<APIResponse> {
     const data = await response.json();
     return {
       success: true,
-      response: data.response,
-      score: calculateScore(data.response),
-      refused: isRefused(data.response),
+      response: data.choices[0].message.content,
+      score: calculateScore(data.choices[0].message.content),
+      refused: isRefused(data.choices[0].message.content),
     };
   } catch (error) {
     console.error('API Error:', error);

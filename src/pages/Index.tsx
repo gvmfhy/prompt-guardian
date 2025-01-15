@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -11,12 +12,20 @@ import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [initialPrompt, setInitialPrompt] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [results, setResults] = useState<BeamSearchResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const { toast } = useToast();
 
   const runBeamSearch = async () => {
-    if (!initialPrompt.trim()) return;
+    if (!initialPrompt.trim() || !apiKey.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter both a prompt and an API key",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsRunning(true);
     const maxIterations = 3;
@@ -31,10 +40,8 @@ const Index = () => {
       for (let iteration = 0; iteration < maxIterations; iteration++) {
         const newCandidates: Prompt[] = [];
 
-        // Generate transformations for each prompt in the beam
         for (const prompt of currentPrompts) {
-          // Query the original prompt
-          const apiResponse = await queryLLM(prompt.text);
+          const apiResponse = await queryLLM(prompt.text, apiKey);
           
           if (!apiResponse.success) {
             toast({
@@ -52,10 +59,9 @@ const Index = () => {
             refused: apiResponse.refused
           });
 
-          // Try transformations
           for (const type of TRANSFORMATION_TYPES) {
             const transformedText = transformPrompt(prompt.text, type);
-            const transformedResponse = await queryLLM(transformedText);
+            const transformedResponse = await queryLLM(transformedText, apiKey);
             
             if (transformedResponse.success) {
               newCandidates.push({
@@ -68,11 +74,9 @@ const Index = () => {
           }
         }
 
-        // Sort by score and keep top-k
         newCandidates.sort((a, b) => b.score - a.score);
         currentPrompts = newCandidates.slice(0, beamWidth);
 
-        // Log the results
         setResults(prev => [...prev, {
           prompts: [...currentPrompts],
           iteration,
@@ -101,19 +105,36 @@ const Index = () => {
       </Alert>
 
       <Card className="p-4 mb-6">
-        <h2 className="text-xl font-semibold mb-2">Initial Prompt</h2>
-        <Textarea
-          value={initialPrompt}
-          onChange={(e) => setInitialPrompt(e.target.value)}
-          placeholder="Enter your initial prompt..."
-          className="mb-4"
-        />
-        <Button 
-          onClick={runBeamSearch}
-          disabled={isRunning || !initialPrompt.trim()}
-        >
-          {isRunning ? 'Running...' : 'Run Beam Search'}
-        </Button>
+        <h2 className="text-xl font-semibold mb-2">Configuration</h2>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="apiKey" className="block text-sm font-medium mb-1">Perplexity API Key</label>
+            <Input
+              id="apiKey"
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Enter your Perplexity API key..."
+              className="mb-4"
+            />
+          </div>
+          <div>
+            <label htmlFor="prompt" className="block text-sm font-medium mb-1">Initial Prompt</label>
+            <Textarea
+              id="prompt"
+              value={initialPrompt}
+              onChange={(e) => setInitialPrompt(e.target.value)}
+              placeholder="Enter your initial prompt..."
+              className="mb-4"
+            />
+          </div>
+          <Button 
+            onClick={runBeamSearch}
+            disabled={isRunning || !initialPrompt.trim() || !apiKey.trim()}
+          >
+            {isRunning ? 'Running...' : 'Run Beam Search'}
+          </Button>
+        </div>
       </Card>
 
       <Card className="p-4">
