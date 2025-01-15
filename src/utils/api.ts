@@ -1,9 +1,17 @@
 import { APIResponse } from '@/types/beast';
 import { calculateScore, isRefused } from './scoring';
+import { getCachedResponse, setCachedResponse } from './cache';
 
 const API_ENDPOINT = 'https://api.perplexity.ai/chat/completions';
 
 export async function queryLLM(prompt: string, apiKey: string): Promise<APIResponse> {
+  // Check cache first
+  const cached = getCachedResponse(prompt);
+  if (cached) {
+    console.log(`[Cache Hit] Using cached response for prompt: "${prompt.substring(0, 50)}..."`);
+    return cached;
+  }
+
   try {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
@@ -39,13 +47,18 @@ export async function queryLLM(prompt: string, apiKey: string): Promise<APIRespo
 
     const data = await response.json();
     const responseText = data.choices[0].message.content;
-
-    return {
+    const scoredResponse: APIResponse = {
       success: true,
       response: responseText,
       score: calculateScore(responseText),
       refused: isRefused(responseText),
     };
+
+    // Cache the response
+    setCachedResponse(prompt, scoredResponse);
+    console.log(`[Cache Miss] Caching new response for prompt: "${prompt.substring(0, 50)}..."`);
+
+    return scoredResponse;
   } catch (error) {
     console.error('API Error:', error);
     return {
