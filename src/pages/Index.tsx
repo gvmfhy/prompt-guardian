@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BeamResults } from '@/components/BeamResults';
 import { Prompt, BeamSearchResult } from '@/types/beast';
 import { transformPrompt, TRANSFORMATION_TYPES } from '@/utils/transformations';
 import { queryLLM } from '@/utils/api';
@@ -95,7 +95,7 @@ const Index = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="container mx-auto p-4 max-w-6xl">
       <h1 className="text-3xl font-bold mb-6">BEAST: Beam Search Attack Testing</h1>
       
       <Alert className="mb-4">
@@ -104,59 +104,44 @@ const Index = () => {
         </AlertDescription>
       </Alert>
 
-      <Card className="p-4 mb-6">
-        <h2 className="text-xl font-semibold mb-2">Configuration</h2>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="apiKey" className="block text-sm font-medium mb-1">Perplexity API Key</label>
-            <Input
-              id="apiKey"
-              type="password"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter your Perplexity API key..."
-              className="mb-4"
-            />
-          </div>
-          <div>
-            <label htmlFor="prompt" className="block text-sm font-medium mb-1">Initial Prompt</label>
-            <Textarea
-              id="prompt"
-              value={initialPrompt}
-              onChange={(e) => setInitialPrompt(e.target.value)}
-              placeholder="Enter your initial prompt..."
-              className="mb-4"
-            />
-          </div>
-          <Button 
-            onClick={runBeamSearch}
-            disabled={isRunning || !initialPrompt.trim() || !apiKey.trim()}
-          >
-            {isRunning ? 'Running...' : 'Run Beam Search'}
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Results</h2>
-        <ScrollArea className="h-[400px]">
-          {results.map((result, i) => (
-            <div key={i} className="mb-6">
-              <h3 className="font-medium mb-2">Iteration {result.iteration + 1}</h3>
-              {result.prompts.map((prompt, j) => (
-                <div key={j} className="mb-4 p-3 bg-gray-50 rounded">
-                  <p className="mb-1"><strong>Prompt:</strong> {prompt.text}</p>
-                  <p className="mb-1"><strong>Response:</strong> {prompt.response}</p>
-                  <p className="text-sm text-gray-600">Score: {prompt.score.toFixed(2)}</p>
-                  {prompt.refused && (
-                    <p className="text-sm text-red-500">Model refused to respond</p>
-                  )}
-                </div>
-              ))}
+      <div className="grid gap-6 md:grid-cols-[1fr,1fr]">
+        <Card className="p-4">
+          <h2 className="text-xl font-semibold mb-4">Configuration</h2>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="apiKey" className="block text-sm font-medium mb-1">Perplexity API Key</label>
+              <Input
+                id="apiKey"
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Enter your Perplexity API key..."
+              />
             </div>
-          ))}
-        </ScrollArea>
-      </Card>
+            <div>
+              <label htmlFor="prompt" className="block text-sm font-medium mb-1">Initial Prompt</label>
+              <Textarea
+                id="prompt"
+                value={initialPrompt}
+                onChange={(e) => setInitialPrompt(e.target.value)}
+                placeholder="Enter your initial prompt..."
+                className="min-h-[100px]"
+              />
+            </div>
+            <Button 
+              onClick={runBeamSearch}
+              disabled={isRunning || !initialPrompt.trim() || !apiKey.trim()}
+              className="w-full"
+            >
+              {isRunning ? 'Running Beam Search...' : 'Start Beam Search'}
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <BeamResults results={results} />
+        </Card>
+      </div>
     </div>
   );
 };
