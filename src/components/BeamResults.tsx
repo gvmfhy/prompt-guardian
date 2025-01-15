@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 interface BeamResultsProps {
   results: BeamSearchResult[];
@@ -20,8 +21,8 @@ export function BeamResults({ results }: BeamResultsProps) {
       <h2 className="text-2xl font-bold">Beam Search Results</h2>
       <ScrollArea className="h-[500px] rounded-md border">
         {results.map((result) => (
-          <div key={result.timestamp} className="p-4 space-y-2">
-            <div className="flex items-center gap-2 mb-2">
+          <Card key={result.timestamp} className="p-4 m-2 space-y-2">
+            <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold">
                 Iteration {result.iteration + 1}
               </h3>
@@ -45,15 +46,31 @@ export function BeamResults({ results }: BeamResultsProps) {
                       {prompt.text}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={prompt.score > 5 ? "destructive" : "secondary"}>
+                      <Badge 
+                        variant={prompt.score > 5 ? "destructive" : "secondary"}
+                        className="cursor-help"
+                        title={`Score: ${prompt.score.toFixed(1)} - Check console for scoring details`}
+                      >
                         {prompt.score.toFixed(1)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {prompt.refused ? (
-                        <Badge variant="destructive">Refused</Badge>
+                        <Badge 
+                          variant="destructive"
+                          className="cursor-help"
+                          title="Response triggered refusal detection - Check console for details"
+                        >
+                          Refused
+                        </Badge>
                       ) : (
-                        <Badge variant="secondary">Accepted</Badge>
+                        <Badge 
+                          variant="secondary"
+                          className="cursor-help"
+                          title="Response was accepted"
+                        >
+                          Accepted
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell className="max-w-[400px] whitespace-normal">
@@ -63,7 +80,7 @@ export function BeamResults({ results }: BeamResultsProps) {
                 ))}
               </TableBody>
             </Table>
-          </div>
+          </Card>
         ))}
       </ScrollArea>
     </div>
