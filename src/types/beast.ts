@@ -16,3 +16,11 @@ export interface BeamSearchResult {
   iteration: number;
   timestamp: string;
 }
+
+export interface APIResponse {
+  success: boolean;
+  error?: string;
+  response?: string;
+  score?: number;
+  refused?: boolean;
+}

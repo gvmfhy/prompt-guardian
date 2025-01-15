@@ -6,11 +6,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Prompt, BeamSearchResult } from '@/types/beast';
 import { transformPrompt, TRANSFORMATION_TYPES } from '@/utils/transformations';
+import { queryLLM } from '@/utils/api';
+import { useToast } from "@/components/ui/use-toast";
 
 const Index = () => {
   const [initialPrompt, setInitialPrompt] = useState('');
   const [results, setResults] = useState<BeamSearchResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
+  const { toast } = useToast();
 
   const runBeamSearch = async () => {
     if (!initialPrompt.trim()) return;
@@ -24,40 +27,67 @@ const Index = () => {
       score: 0
     }];
 
-    for (let iteration = 0; iteration < maxIterations; iteration++) {
-      const newCandidates: Prompt[] = [];
+    try {
+      for (let iteration = 0; iteration < maxIterations; iteration++) {
+        const newCandidates: Prompt[] = [];
 
-      // Generate transformations for each prompt in the beam
-      for (const prompt of currentPrompts) {
-        for (const type of TRANSFORMATION_TYPES) {
-          const transformedText = transformPrompt(prompt.text, type);
+        // Generate transformations for each prompt in the beam
+        for (const prompt of currentPrompts) {
+          // Query the original prompt
+          const apiResponse = await queryLLM(prompt.text);
           
-          // In a real implementation, this would call the LLM API
-          // For now, we'll simulate a response and scoring
-          const mockScore = Math.random(); // Replace with real scoring logic
-          const mockRefused = Math.random() > 0.7;
+          if (!apiResponse.success) {
+            toast({
+              title: "API Error",
+              description: apiResponse.error,
+              variant: "destructive"
+            });
+            continue;
+          }
 
           newCandidates.push({
-            text: transformedText,
-            score: mockScore,
-            refused: mockRefused
+            text: prompt.text,
+            score: apiResponse.score || 0,
+            response: apiResponse.response,
+            refused: apiResponse.refused
           });
+
+          // Try transformations
+          for (const type of TRANSFORMATION_TYPES) {
+            const transformedText = transformPrompt(prompt.text, type);
+            const transformedResponse = await queryLLM(transformedText);
+            
+            if (transformedResponse.success) {
+              newCandidates.push({
+                text: transformedText,
+                score: transformedResponse.score || 0,
+                response: transformedResponse.response,
+                refused: transformedResponse.refused
+              });
+            }
+          }
         }
+
+        // Sort by score and keep top-k
+        newCandidates.sort((a, b) => b.score - a.score);
+        currentPrompts = newCandidates.slice(0, beamWidth);
+
+        // Log the results
+        setResults(prev => [...prev, {
+          prompts: [...currentPrompts],
+          iteration,
+          timestamp: new Date().toISOString()
+        }]);
       }
-
-      // Sort by score and keep top-k
-      newCandidates.sort((a, b) => b.score - a.score);
-      currentPrompts = newCandidates.slice(0, beamWidth);
-
-      // Log the results
-      setResults(prev => [...prev, {
-        prompts: [...currentPrompts],
-        iteration,
-        timestamp: new Date().toISOString()
-      }]);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred during beam search",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRunning(false);
     }
-
-    setIsRunning(false);
   };
 
   return (
@@ -95,6 +125,7 @@ const Index = () => {
               {result.prompts.map((prompt, j) => (
                 <div key={j} className="mb-4 p-3 bg-gray-50 rounded">
                   <p className="mb-1"><strong>Prompt:</strong> {prompt.text}</p>
+                  <p className="mb-1"><strong>Response:</strong> {prompt.response}</p>
                   <p className="text-sm text-gray-600">Score: {prompt.score.toFixed(2)}</p>
                   {prompt.refused && (
                     <p className="text-sm text-red-500">Model refused to respond</p>
