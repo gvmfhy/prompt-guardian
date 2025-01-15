@@ -9,8 +9,11 @@ export async function queryLLM(prompt: string, apiKey: string): Promise<APIRespo
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Origin': window.location.origin
       },
+      mode: 'cors',
       body: JSON.stringify({
         model: 'llama-3.1-sonar-small-128k-online',
         messages: [
@@ -29,7 +32,9 @@ export async function queryLLM(prompt: string, apiKey: string): Promise<APIRespo
     });
 
     if (!response.ok) {
-      throw new Error('API request failed');
+      const errorData = await response.json().catch(() => ({ error: 'API request failed' }));
+      console.error('API Error Response:', errorData);
+      throw new Error(errorData.error || 'API request failed');
     }
 
     const data = await response.json();
